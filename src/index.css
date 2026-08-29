@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  ::selection {
+    @apply bg-primary/40;
+  }
+  /* Scrollbars that match the surface instead of punching a light hole in it */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full border-2 border-solid border-transparent bg-clip-padding;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border-strong;
+  }
+  /* Width lives in the base layer so a utility class (w-32, w-56) still wins. */
+  input,
+  textarea,
+  select {
+    @apply w-full bg-surface-2 border border-border rounded-lg px-3 py-2 text-sm text-ink
+           placeholder:text-muted outline-none transition
+           focus:border-primary focus:ring-2 focus:ring-primary/25;
+  }
+  input[type='checkbox'] {
+    @apply w-4 h-4 p-0 accent-primary;
+  }
+  label {
+    @apply text-xs font-medium text-muted-strong;
+  }
+  table {
+    @apply w-full text-sm;
+  }
+  th {
+    @apply text-left text-xs font-medium text-muted uppercase tracking-wide py-2 px-3;
+  }
+  td {
+    @apply py-2.5 px-3 border-t border-border;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-border rounded-xl shadow-card;
+  }
+  .card-pad {
+    @apply p-6;
+  }
+  .link {
+    @apply text-primary hover:text-primary-hover transition-colors;
+  }
+  .kbd {
+    @apply font-mono text-[11px] px-1.5 py-0.5 rounded border border-border bg-surface-2 text-muted-strong;
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-surface-2 rounded-lg;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  }
+  .prose-report {
+    @apply text-sm leading-7 text-muted-strong;
+  }
+  .prose-report h1 {
+    @apply text-lg font-semibold text-ink mt-6 mb-2;
+  }
+  .prose-report h2 {
+    @apply text-base font-semibold text-ink mt-6 mb-2;
+  }
+  .prose-report h3 {
+    @apply text-sm font-semibold text-ink mt-4 mb-1;
+  }
+  .prose-report ul {
+    @apply list-disc pl-5 space-y-1 my-2;
+  }
+  .prose-report table {
+    @apply my-3 border border-border rounded-lg overflow-hidden;
+  }
+  .prose-report th {
+    @apply bg-surface-2;
+  }
+  .prose-report strong {
+    @apply text-ink font-medium;
+  }
+  .prose-report p {
+    @apply my-2;
+  }
+
+  /* Each sign-in step arrives on its own rather than the form mutating in
+     place, so "password" and "check your email" read as two moments. */
+  .login-step {
+    animation: login-step-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes login-step-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* --- Guided tour -------------------------------------------------------
+     Both the ring and the card are single elements that live for the whole
+     tour, so moving between steps is one interpolation each rather than an
+     unmount/remount. Only the text inside the card is re-keyed, so it
+     crossfades while the box glides - the eye follows one thing, not three. */
+  .tour-ring {
+    will-change: top, left, width, height;
+    transition:
+      top 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      left 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      height 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: tour-pulse 0.4s ease-out;
+  }
+  .tour-card {
+    will-change: top, left;
+    animation: tour-card-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    transition:
+      top 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+      left 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Re-keyed per step: the new wording arrives on its own, small movement. */
+  .tour-step {
+    animation: tour-step-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .tour-fade {
+    animation: tour-fade-in 0.24s ease-out;
+  }
+
+  @keyframes tour-card-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tour-step-in {
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tour-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes tour-pulse {
+    0% {
+      filter: brightness(1.6);
+    }
+    100% {
+      filter: brightness(1);
+    }
+  }
+
+  /* Anyone who has asked the OS to reduce motion gets the steps instantly. */
+  @media (prefers-reduced-motion: reduce) {
+    .login-step,
+    .tour-ring,
+    .tour-card,
+    .tour-step,
+    .tour-fade {
+      animation: none;
+      transition: none;
+    }
+  }
+}

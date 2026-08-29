@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+
+# .env IS committed here, deliberately: it holds placeholders and defaults,
+# and it doubles as the documented list of every setting. Real values go in
+# .env.local, which overrides it and never leaves your machine.
+.env.local
+.env.*.local
+
+*.log
+logs/
+storage/
+coverage/
+.DS_Store
+.vercel
