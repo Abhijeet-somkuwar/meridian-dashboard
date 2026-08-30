@@ -124,10 +124,14 @@ export const Badge = ({ tone = 'neutral', className, children, icon: Icon }) => 
   </span>
 );
 
-export const PlatformBadge = ({ type }) => {
-  const labels = { wordpress: 'WP', php: 'PHP', shopify: 'Shopify', wix: 'Wix', other: 'Site' };
+export const PlatformBadge = ({ type, stack }) => {
+  const labels = { wordpress: 'WP', php: 'PHP', shopify: 'Shopify', wix: 'Wix', custom: 'Dev-built', other: 'Site' };
   const tone = type === 'wordpress' ? 'primary' : type === 'php' ? 'warning' : 'neutral';
-  return <Badge tone={tone}>{labels[type] ?? type}</Badge>;
+  return (
+    <span title={stack || undefined}>
+      <Badge tone={tone}>{labels[type] ?? type}</Badge>
+    </span>
+  );
 };
 
 export const EngineBadge = ({ engine }) => {

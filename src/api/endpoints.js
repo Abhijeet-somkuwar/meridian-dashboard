@@ -35,6 +35,9 @@ export const clients = {
   list: (params, signal) => unwrap(api.get('/clients', { params, signal })),
   get: (id) => unwrap(api.get(`/clients/${id}`)),
   create: (body) => unwrap(api.post('/clients', body)),
+  // Reads the public homepage and says how the site is built. Slow sites are
+  // waited for; the form is usable meanwhile.
+  detect: (domain, signal) => unwrap(api.post('/clients/detect', { domain }, { signal, timeout: 45_000 })),
   update: (id, body) => unwrap(api.patch(`/clients/${id}`, body)),
   assign: (id, manager_id) => unwrap(api.patch(`/clients/${id}/assign`, { manager_id })),
   connectWp: (id, body) => unwrap(api.post(`/clients/${id}/connect-wp`, body)),
@@ -76,6 +79,10 @@ export const suggestions = {
   bulkStatus: (campaignId, ids, status) => unwrap(api.patch(`/suggestions/${campaignId}/bulk-status`, { ids, status })),
   deploy: (campaignId, id) => unwrap(api.post(`/suggestions/${campaignId}/${id}/deploy`)),
   deployments: (campaignId) => unwrap(api.get(`/suggestions/${campaignId}/deployments`)),
+  // Looks at the live site to see whether the change is really there.
+  verify: (campaignId, id) => unwrap(api.post(`/suggestions/${campaignId}/${id}/verify`, undefined, { timeout: 45_000 })),
+  // The message the manager forwards to the client's developer.
+  handoff: (campaignId, params) => unwrap(api.get(`/suggestions/${campaignId}/handoff`, { params })),
   rollback: (campaignId, deploymentId) =>
     unwrap(api.post(`/suggestions/${campaignId}/deployments/${deploymentId}/rollback`)),
 };

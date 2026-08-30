@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Check,
   ChevronDown,
+  ClipboardList,
   CloudUpload,
+  Globe,
   History,
   MapPin,
   PenLine,
@@ -34,7 +36,10 @@ const AUTO_DEPLOYABLE = ['meta_title', 'meta_description', 'slug', 'content_para
 
 const STATUS_TONE = { pending: 'warning', approved: 'primary', applied: 'success', rejected: 'neutral' };
 
-const SuggestionCard = ({ suggestion, campaign, onStatus, onDeploy, busy }) => {
+const VERIFY_LABEL = { live: 'live on site', not_found: 'not live yet', error: 'could not check' };
+const VERIFY_TONE = { live: 'success', not_found: 'warning', error: 'neutral' };
+
+const SuggestionCard = ({ suggestion, campaign, onStatus, onDeploy, onVerify, busy, verifying }) => {
   const [open, setOpen] = useState(suggestion.status === 'pending');
   const canDeploy =
     campaign.platform_type === 'wordpress' &&
@@ -55,6 +60,13 @@ const SuggestionCard = ({ suggestion, campaign, onStatus, onDeploy, busy }) => {
             <Badge tone={STATUS_TONE[suggestion.status]}>{suggestion.status}</Badge>
             {suggestion.deployment_status === 'deployed' && <Badge tone="success">pushed to WP</Badge>}
             {suggestion.deployment_status === 'rolled_back' && <Badge tone="warning">rolled back</Badge>}
+            {suggestion.verify_status && (
+              <span title={suggestion.verify_note || undefined}>
+                <Badge tone={VERIFY_TONE[suggestion.verify_status]} icon={Globe}>
+                  {VERIFY_LABEL[suggestion.verify_status]}
+                </Badge>
+              </span>
+            )}
           </div>
           {suggestion.keyword_targeted && (
             <p className="text-xs text-muted mt-1">targeting “{suggestion.keyword_targeted}”</p>
@@ -118,10 +130,32 @@ const SuggestionCard = ({ suggestion, campaign, onStatus, onDeploy, busy }) => {
                 Reject
               </Button>
             )}
+            {suggestion.status === 'applied' && (
+              <Button
+                size="sm"
+                icon={Globe}
+                onClick={() => onVerify(suggestion.id)}
+                loading={verifying === suggestion.id}
+                title="Reads the live page the way Google does and checks the change is there"
+              >
+                Check live site
+              </Button>
+            )}
             {suggestion.applied_at && (
               <span className="text-xs text-muted ml-auto">Applied {fmtRelative(suggestion.applied_at)}</span>
             )}
           </div>
+
+          {suggestion.verify_note && (
+            <p
+              className={`text-xs leading-relaxed ${
+                suggestion.verify_status === 'live' ? 'text-success' : suggestion.verify_status === 'not_found' ? 'text-warning' : 'text-muted'
+              }`}
+            >
+              {suggestion.verify_note}
+              {suggestion.verified_at ? ` · checked ${fmtRelative(suggestion.verified_at)}` : ''}
+            </p>
+          )}
         </div>
       )}
     </Card>
@@ -133,7 +167,9 @@ export default function OnPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState('pending');
   const [busy, setBusy] = useState(null);
+  const [verifying, setVerifying] = useState(null);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [handoff, setHandoff] = useState(null);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['suggestions', campaign.id],
@@ -161,11 +197,40 @@ export default function OnPage() {
     onError: (err) => toast.error(err.message),
   });
 
+  // "Applied" is a claim; the live page is the fact. Reads the page the way a
+  // crawler does and records what it found - it never edits the site.
+  const verify = useMutation({
+    mutationFn: (id) => suggestionsApi.verify(campaign.id, id),
+    onMutate: (id) => setVerifying(id),
+    onSettled: () => setVerifying(null),
+    onSuccess: ({ result }) => {
+      invalidate();
+      if (result.status === 'live') toast.success('Found on the live site');
+      else if (result.status === 'not_found') toast(`Not live yet: ${result.note}`, { icon: '🔍', duration: 8000 });
+      else toast(result.note, { icon: '⚠️', duration: 8000 });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const setStatus = useMutation({
     mutationFn: ({ id, status }) => suggestionsApi.setStatus(campaign.id, id, { status }),
     onSuccess: (_res, vars) => {
       invalidate();
       toast.success(`Marked ${vars.status}`);
+      if (vars.status === 'applied') verify.mutate(vars.id);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // One message for the client's developer: everything still to do, per page.
+  const loadHandoff = useMutation({
+    mutationFn: (page) => suggestionsApi.handoff(campaign.id, page ? { page } : undefined),
+    onSuccess: (res, page) => {
+      if (!res.count) {
+        toast('Nothing to hand off - every suggestion is applied or rejected');
+        return;
+      }
+      setHandoff({ ...res, page });
     },
     onError: (err) => toast.error(err.message),
   });
@@ -216,14 +281,31 @@ export default function OnPage() {
               ? campaign.wp_connected
                 ? 'WordPress is connected, so most changes can be applied for you - and undone'
                 : 'Connect WordPress on the client page and we can apply changes for you'
-              : `Written for this ${campaign.platform_type === 'php' ? 'hand-coded' : campaign.platform_type} site - each one names the exact file and place`
+              : campaign.platform_type === 'custom'
+                ? `This site is built from source code${campaign.tech_stack ? ` (${campaign.tech_stack})` : ''}. Send the developer handoff, then check the live site once they say it is done.`
+                : campaign.platform_type === 'php'
+                  ? 'Written for this hand-coded site - each one names the exact file and place'
+                  : `Written for this ${campaign.platform_type === 'other' ? '' : `${campaign.platform_type} `}site - each one names the element to change and where it lives`
           }
           icon={PenLine}
           action={
             <div className="flex gap-2">
-              <Button size="sm" icon={History} onClick={() => setHistoryOpen(true)}>
-                Deployments
-              </Button>
+              {campaign.platform_type === 'wordpress' ? (
+                <Button size="sm" icon={History} onClick={() => setHistoryOpen(true)}>
+                  Deployments
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  icon={ClipboardList}
+                  variant={campaign.platform_type === 'custom' ? 'primary' : 'secondary'}
+                  onClick={() => loadHandoff.mutate(undefined)}
+                  loading={loadHandoff.isPending && loadHandoff.variables === undefined}
+                  data-tour="onpage-handoff"
+                >
+                  Developer handoff
+                </Button>
+              )}
               <Button
                 size="sm"
                 variant="primary"
@@ -276,6 +358,16 @@ export default function OnPage() {
               <span className="font-mono text-xs text-muted-strong">{page}</span>
               <span className="text-xs text-muted">{items.length} item(s)</span>
               <div className="flex-1 h-px bg-border" />
+              {tab === 'pending' && campaign.platform_type !== 'wordpress' && (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 text-xs text-muted hover:text-ink"
+                  onClick={() => loadHandoff.mutate(page)}
+                >
+                  <ClipboardList className="w-3.5 h-3.5" />
+                  Handoff for this page
+                </button>
+              )}
             </div>
             {items.map((s) => (
               <SuggestionCard
@@ -283,13 +375,49 @@ export default function OnPage() {
                 suggestion={s}
                 campaign={campaign}
                 busy={busy}
+                verifying={verifying}
                 onStatus={(id, status) => setStatus.mutate({ id, status })}
                 onDeploy={(sg) => deploy.mutate(sg.id)}
+                onVerify={(id) => verify.mutate(id)}
               />
             ))}
           </div>
         ))
       )}
+
+      <Modal
+        open={Boolean(handoff)}
+        onClose={() => setHandoff(null)}
+        title="Developer handoff"
+        subtitle={
+          handoff
+            ? `${handoff.count} change(s)${handoff.page ? ` for ${handoff.page}` : ''} - send this to whoever owns the site's code, then check the live site when they reply`
+            : undefined
+        }
+        footer={
+          handoff && (
+            <div className="flex items-center justify-between gap-3 w-full">
+              <p className="text-xs text-muted">Plain text - paste it into WhatsApp, email or a ticket as-is.</p>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={() => setHandoff(null)}>
+                  Close
+                </Button>
+                <CopyButton text={handoff.text} label="Copy handoff" variant="primary" />
+              </div>
+            </div>
+          )
+        }
+        wide
+      >
+        {handoff && (
+          <textarea
+            readOnly
+            value={handoff.text}
+            onFocus={(e) => e.target.select()}
+            className="w-full h-[60vh] font-mono text-xs leading-relaxed rounded-lg border border-border bg-surface-2/60 p-4 resize-none"
+          />
+        )}
+      </Modal>
 
       <Modal
         open={historyOpen}

@@ -51,7 +51,7 @@ export const CampaignShell = () => {
 
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-xl font-semibold">{campaign.business_name}</h1>
-          <PlatformBadge type={campaign.platform_type} />
+          <PlatformBadge type={campaign.platform_type} stack={campaign.tech_stack} />
           <Badge tone={campaign.status === 'active' ? 'success' : 'primary'}>{phase.label}</Badge>
           <a
             href={`https://${campaign.domain}`}

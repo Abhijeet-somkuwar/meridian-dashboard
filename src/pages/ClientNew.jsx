@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ExternalLink, Plus, Search, Sparkles, Trash2, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Loader2, Plus, ScanSearch, Search, Sparkles, Trash2, TriangleAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { audit, clients, geo } from '../api/endpoints.js';
 import { hasErrors, rules, stripProtocol, validateForm } from '../lib/validation.js';
@@ -51,8 +51,37 @@ export default function ClientNew() {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
   const [runAudit, setRunAudit] = useState(true);
+  // What the website itself says about how it is built. Fills the platform
+  // field unless the manager has already chosen one by hand.
+  const [detection, setDetection] = useState(null);
+  const [detecting, setDetecting] = useState(false);
+  const platformTouched = useRef(false);
+  const detectAbort = useRef(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const detectPlatform = async (domainValue) => {
+    const domain = stripProtocol(domainValue);
+    if (!domain || rules.domain(domain)) return;
+    if (detection?.domain === domain) return;
+    detectAbort.current?.abort();
+    const controller = new AbortController();
+    detectAbort.current = controller;
+    setDetecting(true);
+    try {
+      const res = await clients.detect(domain, controller.signal);
+      if (controller.signal.aborted) return;
+      const found = res.detection ? { ...res.detection, domain } : { domain, reachable: false };
+      setDetection(found);
+      if (res.detection && !platformTouched.current) {
+        setForm((f) => ({ ...f, platform_type: res.detection.platform_type }));
+      }
+    } catch {
+      if (!controller.signal.aborted) setDetection({ domain, reachable: false });
+    } finally {
+      if (!controller.signal.aborted) setDetecting(false);
+    }
+  };
 
   const { data: countryData } = useQuery({
     queryKey: ['countries'],
@@ -125,6 +154,8 @@ export default function ClientNew() {
         business_name: form.business_name.trim(),
         domain: stripProtocol(form.domain),
         platform_type: form.platform_type,
+        tech_stack: detection?.tech_stack || undefined,
+        hosting: detection?.hosting || undefined,
         geo_target: geoTarget || undefined,
         target_cities: form.target_cities,
         languages: form.languages.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
@@ -208,21 +239,90 @@ export default function ClientNew() {
               <Input
                 value={form.domain}
                 onChange={setField('domain')}
-                onBlur={blur('domain')}
+                onBlur={(e) => {
+                  blur('domain')();
+                  detectPlatform(e.target.value);
+                }}
                 data-invalid={Boolean(errorFor('domain'))}
                 placeholder="rajeshplumbers.com"
               />
             </Field>
 
-            <Field label="Website is built with" hint="Decides how we write the step-by-step instructions">
-              <Select value={form.platform_type} onChange={setField('platform_type')}>
+            <Field
+              label="Website is built with"
+              hint={
+                form.platform_type === 'custom'
+                  ? 'Changes will be written as a handoff for the client’s developer'
+                  : 'Decides how we write the step-by-step instructions'
+              }
+            >
+              <Select
+                value={form.platform_type}
+                onChange={(e) => {
+                  platformTouched.current = true;
+                  setField('platform_type')(e);
+                }}
+              >
                 <option value="wordpress">WordPress</option>
-                <option value="php">Hand-coded / cPanel</option>
+                <option value="php">Hand-coded PHP / cPanel</option>
                 <option value="shopify">Shopify</option>
                 <option value="wix">Wix</option>
-                <option value="other">Something else</option>
+                <option value="custom">Custom-built app (React, Next.js, Vue…) — has a developer</option>
+                <option value="other">Something else / not sure</option>
               </Select>
             </Field>
+
+            {(detecting || detection) && (
+              <div
+                className="sm:col-span-2 flex items-start gap-3 rounded-lg border border-border bg-surface-2/60 px-4 py-3"
+                data-tour="new-detect"
+              >
+                {detecting ? (
+                  <Loader2 className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-muted" />
+                ) : (
+                  <ScanSearch className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                )}
+                <div className="min-w-0 text-sm">
+                  {detecting ? (
+                    <p className="text-muted">Looking at {detection?.domain || stripProtocol(form.domain)} to see how it is built…</p>
+                  ) : detection.reachable === false ? (
+                    <p className="text-muted">
+                      Could not open <span className="font-mono">{detection.domain}</span> — pick the platform yourself.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="text-ink">
+                        <span className="font-mono">{detection.domain}</span> looks like{' '}
+                        <b>{detection.tech_stack || 'a site we could not identify'}</b>
+                        {detection.confidence !== 'high' && detection.tech_stack ? ' (probably)' : ''}.
+                      </p>
+                      <p className="text-xs text-muted mt-0.5">
+                        {detection.editable_by === 'developer'
+                          ? 'The page is built from source code, so changes go to whoever owns that code — we will write them as a developer handoff.'
+                          : detection.editable_by === 'admin_panel'
+                            ? 'Changes are made in its admin panel — instructions will name the exact screen.'
+                            : detection.editable_by === 'file_manager'
+                              ? 'Pages are plain files on the server — instructions will name the file and line.'
+                              : 'Instructions will describe the exact HTML element to change.'}
+                        {detection.reasons?.length ? ` Clue: ${detection.reasons[0]}.` : ''}
+                      </p>
+                      {form.platform_type !== detection.platform_type && (
+                        <button
+                          type="button"
+                          className="mt-1.5 text-xs font-medium text-primary hover:underline"
+                          onClick={() => {
+                            platformTouched.current = true;
+                            setForm((f) => ({ ...f, platform_type: detection.platform_type }));
+                          }}
+                        >
+                          Use this
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             <Field
               label="What the business does"

@@ -43,6 +43,7 @@ export const platformLabel = {
   php: 'PHP',
   shopify: 'Shopify',
   wix: 'Wix',
+  custom: 'Dev-built',
   other: 'Site',
 };
 

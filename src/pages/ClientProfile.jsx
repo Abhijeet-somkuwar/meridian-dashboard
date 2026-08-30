@@ -225,8 +225,12 @@ export default function ClientProfile() {
                 <option value="php">PHP / cPanel</option>
                 <option value="shopify">Shopify</option>
                 <option value="wix">Wix</option>
+                <option value="custom">Custom-built app (React, Next.js, Vue…)</option>
                 <option value="other">Other</option>
               </Select>
+              {client.tech_stack && (
+                <p className="text-xs text-muted">Detected from the site: {client.tech_stack}</p>
+              )}
             </Field>
             <Field label="Niche">
               <Input value={form.niche} onChange={set('niche')} />
