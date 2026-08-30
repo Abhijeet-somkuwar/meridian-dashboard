@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, MailCheck, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../store/auth.js';
@@ -28,6 +28,9 @@ export default function Login() {
   const [challenge, setChallenge] = useState(null);
   const [code, setCode] = useState('');
   const [trustDevice, setTrustDevice] = useState(true);
+  // On by default: one owner, on their own devices. The box is there for the
+  // shared-computer case, not the common one.
+  const [rememberMe, setRememberMe] = useState(true);
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
   const codeRef = useRef(null);
@@ -44,7 +47,7 @@ export default function Login() {
     e.preventDefault();
     setBusy(true);
     try {
-      const res = await login(form.email.trim(), form.password);
+      const res = await login(form.email.trim(), form.password, rememberMe);
       if (res.mfaRequired) {
         setChallenge(res);
         setCode('');
@@ -118,13 +121,13 @@ export default function Login() {
           }}
         />
 
-        <div className="relative flex items-center gap-3">
+        <Link to="/" className="relative flex items-center gap-3 w-fit group" aria-label="Back to the home page">
           <LogoTile size={40} className="shadow-lift" />
           <div>
             <div className="font-semibold tracking-tight text-[15px]">Meridian</div>
-            <div className="text-xs text-muted -mt-0.5">SEO operations</div>
+            <div className="text-xs text-muted -mt-0.5 group-hover:text-muted-strong transition-colors">SEO operations</div>
           </div>
-        </div>
+        </Link>
 
         <div className="relative max-w-md">
           <h2 className="text-[32px] leading-[1.15] font-semibold tracking-tight">
@@ -147,10 +150,18 @@ export default function Login() {
       {/* --- Form ------------------------------------------------------------ */}
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-[360px]">
-          <div className="lg:hidden flex items-center gap-3 mb-10">
+          <Link to="/" className="lg:hidden flex items-center gap-3 mb-10 w-fit" aria-label="Back to the home page">
             <LogoTile size={40} />
             <div className="font-semibold tracking-tight">Meridian</div>
-          </div>
+          </Link>
+
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs text-muted hover:text-ink transition-colors mb-6"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back to home
+          </Link>
 
           {step === 'password' ? (
             <form onSubmit={submitPassword} key="password" className="login-step">
@@ -182,7 +193,17 @@ export default function Login() {
                 </Field>
               </div>
 
-              <Button type="submit" variant="primary" size="lg" loading={busy} className="w-full mt-7">
+              <label className="mt-5 flex items-center gap-2.5 text-sm text-muted-strong cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 accent-primary"
+                />
+                Keep me signed in for 30 days
+              </label>
+
+              <Button type="submit" variant="primary" size="lg" loading={busy} className="w-full mt-6">
                 Continue
                 {!busy && <ArrowRight className="w-4 h-4" />}
               </Button>

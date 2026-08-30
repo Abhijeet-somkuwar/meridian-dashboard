@@ -7,7 +7,10 @@ export const auth = {
   verify: (body) => unwrap(api.post('/auth/verify', body)),
   resendCode: (challengeId) => unwrap(api.post('/auth/verify/resend', { challengeId })),
   forgetDevices: () => unwrap(api.post('/auth/forget-devices')),
-  refresh: () => unwrap(api.post('/auth/refresh')),
+  // A refresh against an instance that has gone to sleep can take most of a
+  // minute; that is waited for. What is not waited for is forever.
+  refresh: () => unwrap(api.post('/auth/refresh', undefined, { timeout: 75_000 })),
+  ping: () => api.get('/ping', { timeout: 90_000 }).catch(() => null),
   logout: () => unwrap(api.post('/auth/logout')),
   me: () => unwrap(api.get('/auth/me')),
   token: () => unwrap(api.get('/auth/token')),

@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './store/auth.js';
 import { Loading } from './components/ui/index.jsx';
 import { Shell } from './components/layout/Shell.jsx';
@@ -38,12 +38,49 @@ import NotFound from './pages/NotFound.jsx';
  */
 const looksSignedIn = () => document.cookie.includes('meridian_csrf=');
 
+/**
+ * What you see while the session is being restored. Almost always a flicker.
+ * The exception is the first visit after the free API instance has gone to
+ * sleep, when the refresh call is answered only once the server has woken -
+ * up to a minute. A spinner with no explanation for that long reads as
+ * "broken", so after a few seconds it says what is happening, and after a few
+ * more it offers a way out.
+ */
+const BootScreen = () => {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const a = setTimeout(() => setPhase(1), 3500);
+    const b = setTimeout(() => setPhase(2), 12_000);
+    return () => {
+      clearTimeout(a);
+      clearTimeout(b);
+    };
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center gap-4 px-6 text-center">
+      <Loading label={phase === 0 ? 'Signing you in' : 'Waking the server'} />
+      {phase >= 1 && (
+        <p className="text-sm text-muted max-w-sm leading-relaxed animate-fade-in">
+          The server sleeps when nobody has used it for a while. First visits can take up to a
+          minute; after that it is instant.
+        </p>
+      )}
+      {phase >= 2 && (
+        <Link to="/login" className="text-sm text-muted-strong hover:text-ink underline underline-offset-4 animate-fade-in">
+          Still waiting? Go to sign in
+        </Link>
+      )}
+    </div>
+  );
+};
+
 const RequireAuth = ({ children }) => {
   const { status } = useAuth();
   const location = useLocation();
   if (status === 'loading') {
     if (location.pathname === '/' && !looksSignedIn()) return <Landing />;
-    return <Loading label="Signing you in" />;
+    return <BootScreen />;
   }
   if (status === 'anon') {
     // The front door lives at the root: someone who is not signed in and lands

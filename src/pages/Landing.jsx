@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { auth as authApi } from '../api/endpoints.js';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Logo } from '../components/ui/Logo.jsx';
 
@@ -15,6 +17,13 @@ import { Logo } from '../components/ui/Logo.jsx';
  * the same images already published in the repository's README.
  */
 export default function Landing() {
+  // The free API instance sleeps after fifteen idle minutes and takes most
+  // of a minute to wake. Nudging it now, while the visitor is still reading,
+  // means the sign-in they click next is answered by a server that is up.
+  useEffect(() => {
+    authApi.ping();
+  }, []);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg text-ink">
       {/* Atmosphere - the same two radials and grid the sign-in screen uses. */}

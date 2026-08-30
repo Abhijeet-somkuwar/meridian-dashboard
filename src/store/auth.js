@@ -32,8 +32,8 @@ export const useAuth = create((set, get) => ({
    * and no session exists yet - the caller shows the code screen. Only the
    * `false` branch has tokens to store.
    */
-  login: async (email, password) => {
-    const res = await authApi.login({ email, password });
+  login: async (email, password, rememberMe = false) => {
+    const res = await authApi.login({ email, password, rememberMe });
     if (res.mfaRequired) return res;
     setAccessToken(res.accessToken);
     set({ manager: res.manager, status: 'authed' });
