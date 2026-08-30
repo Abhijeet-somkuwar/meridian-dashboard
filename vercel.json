@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://REPLACE-WITH-YOUR-RENDER-URL.onrender.com/api/:path*"
+      "destination": "https://meridian-api-pg71.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
