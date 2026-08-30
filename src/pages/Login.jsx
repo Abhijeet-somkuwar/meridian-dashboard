@@ -140,7 +140,7 @@ export default function Login() {
 
         <div className="relative flex items-center gap-2 text-xs text-muted">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Private instance. Client data stays on your own infrastructure.
+          Private instance. Client data stays on your own infrastructure. contact abhijeetsomkuwar26@gmail.com for a demo/login.
         </div>
       </div>
 
