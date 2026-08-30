@@ -155,7 +155,7 @@ export default function Login() {
           {step === 'password' ? (
             <form onSubmit={submitPassword} key="password" className="login-step">
               <h1 className="text-[22px] font-semibold tracking-tight">Welcome back</h1>
-              <h4 className="text-[18px] font-semibold tracking-tight">abhijeetsomkuwar26@gmail.com for a demo/login.</h4>
+              <h4 className="text-[10px] font-semibold tracking-tight">Contact abhijeetsomkuwar26@gmail.com for a demo/login.</h4>
 
               <p className="text-sm text-muted mt-1.5 mb-7">Sign in to continue.</p>
 
