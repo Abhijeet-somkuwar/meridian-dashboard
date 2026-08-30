@@ -140,7 +140,7 @@ export default function Login() {
 
         <div className="relative flex items-center gap-2 text-xs text-muted">
           <ShieldCheck className="w-3.5 h-3.5" />
-          Private instance. Client data stays on your own infrastructure. contact abhijeetsomkuwar26@gmail.com for a demo/login.
+          Private instance. Client data stays on your own infrastructure.
         </div>
       </div>
 
@@ -155,6 +155,8 @@ export default function Login() {
           {step === 'password' ? (
             <form onSubmit={submitPassword} key="password" className="login-step">
               <h1 className="text-[22px] font-semibold tracking-tight">Welcome back</h1>
+              <h4 className="text-[18px] font-semibold tracking-tight">abhijeetsomkuwar26@gmail.com for a demo/login.</h4>
+
               <p className="text-sm text-muted mt-1.5 mb-7">Sign in to continue.</p>
 
               <div className="space-y-4">
