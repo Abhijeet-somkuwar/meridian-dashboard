@@ -6,6 +6,7 @@ import { Shell } from './components/layout/Shell.jsx';
 import { CampaignShell } from './components/layout/CampaignShell.jsx';
 import { TourProvider } from './components/tour/Tour.jsx';
 
+import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Clients from './pages/Clients.jsx';
@@ -23,11 +24,34 @@ import ManagerSettings from './pages/ManagerSettings.jsx';
 import Admin from './pages/Admin.jsx';
 import NotFound from './pages/NotFound.jsx';
 
+/**
+ * A synchronous, cheap "is anyone signed in on this browser?" hint.
+ *
+ * The refresh token's cookie is httpOnly and unreadable. The CSRF cookie is
+ * deliberately readable, is set beside it on sign-in and cleared on sign-out,
+ * and grants nothing on its own - so this is only ever a hint, and the server
+ * still decides. It is here for one reason: without it the root path waits on
+ * bootstrap(), which calls /api/auth/refresh, which on a free host that has
+ * gone to sleep takes the better part of a minute. A first-time visitor would
+ * spend that staring at "Signing you in" on what is supposed to be a front
+ * door. With it, the door paints immediately and only the owner waits.
+ */
+const looksSignedIn = () => document.cookie.includes('meridian_csrf=');
+
 const RequireAuth = ({ children }) => {
   const { status } = useAuth();
   const location = useLocation();
-  if (status === 'loading') return <Loading label="Signing you in" />;
-  if (status === 'anon') return <Navigate to="/login" state={{ from: location }} replace />;
+  if (status === 'loading') {
+    if (location.pathname === '/' && !looksSignedIn()) return <Landing />;
+    return <Loading label="Signing you in" />;
+  }
+  if (status === 'anon') {
+    // The front door lives at the root: someone who is not signed in and lands
+    // there gets the landing page, not a form. Every other path still bounces
+    // to /login carrying `from`, so they arrive where they meant to.
+    if (location.pathname === '/') return <Landing />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
   return children;
 };
 

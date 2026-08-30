@@ -7,7 +7,6 @@ import {
   Building2,
   ChevronDown,
   CircleHelp,
-  Compass,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -22,6 +21,7 @@ import { stepsForPath } from '../../lib/tourSteps.js';
 import { dashboard } from '../../api/endpoints.js';
 import { fmtRelative } from '../../lib/format.js';
 import { Badge, Button, EmptyState } from '../ui/index.jsx';
+import { Logo } from '../ui/Logo.jsx';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -195,7 +195,7 @@ export const Shell = () => {
     <>
       <div className="flex items-center gap-2.5 px-3 h-16">
         <div className="w-8 h-8 rounded-lg bg-primary grid place-items-center">
-          <Compass className="w-4.5 h-4.5 text-white" strokeWidth={2.2} />
+          <Logo size={20} stroke="#FFFFFF" dot="#FFFFFF" />
         </div>
         <div>
           <div className="text-sm font-semibold tracking-tight">Meridian</div>

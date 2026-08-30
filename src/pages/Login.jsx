@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Compass, MailCheck, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, MailCheck, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../store/auth.js';
 import { auth as authApi } from '../api/endpoints.js';
 import { Button, Field, Input, PasswordInput } from '../components/ui/index.jsx';
+import { LogoTile } from '../components/ui/Logo.jsx';
 
 /**
  * Sign-in, in two steps: password, then a six-digit code emailed to the account.
@@ -118,9 +119,7 @@ export default function Login() {
         />
 
         <div className="relative flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary grid place-items-center shadow-lift">
-            <Compass className="w-5 h-5 text-white" strokeWidth={2.2} />
-          </div>
+          <LogoTile size={40} className="shadow-lift" />
           <div>
             <div className="font-semibold tracking-tight text-[15px]">Meridian</div>
             <div className="text-xs text-muted -mt-0.5">SEO operations</div>
@@ -149,9 +148,7 @@ export default function Login() {
       <div className="flex items-center justify-center p-6 sm:p-10">
         <div className="w-full max-w-[360px]">
           <div className="lg:hidden flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-primary grid place-items-center">
-              <Compass className="w-5 h-5 text-white" strokeWidth={2.2} />
-            </div>
+            <LogoTile size={40} />
             <div className="font-semibold tracking-tight">Meridian</div>
           </div>
 
