@@ -16,6 +16,7 @@ drafts the client report — and **remembers every action**, so the next decisio
 [![Vercel](https://img.shields.io/badge/deploys_to-Vercel-000000?logo=vercel&logoColor=white)](https://vercel.com)
 
 ![Meridian dashboard](docs/screenshots/dashboard.png)
+link: https://meridian-dashboard-green.vercel.app/
 
 </div>
 
