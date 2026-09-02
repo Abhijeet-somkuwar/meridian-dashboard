@@ -157,7 +157,7 @@ export default function AuditResults() {
                           <Badge tone={meta.tone}>{issue.severity}</Badge>
                           {issue.page && <span className="text-xs text-muted font-mono">{issue.page}</span>}
                         </div>
-                        <p className="text-sm text-muted mt-1">{issue.detail}</p>
+                        <p className="text-sm text-muted mt-1 whitespace-pre-line break-words">{issue.detail}</p>
                       </div>
                     </div>
                   );
