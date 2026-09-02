@@ -6,6 +6,7 @@ import { clients } from '../api/endpoints.js';
 import { useDebouncedValue } from '../hooks/useDebouncedValue.js';
 import {
   Badge,
+  ClientLogo,
   Button,
   Card,
   EmptyState,
@@ -112,7 +113,8 @@ export default function Clients() {
           {rows.map((c) => (
             <Card key={c.id} data-tour="client-card" className="p-5 flex flex-col gap-4 hover:border-border-strong transition-colors">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+                <ClientLogo client={c} size={32} className="mt-0.5" />
+                <div className="min-w-0 flex-1">
                   <Link
                     to={c.campaign_id ? `/campaigns/${c.campaign_id}` : `/clients/${c.id}`}
                     className="text-sm font-medium text-ink hover:text-primary transition-colors block truncate"

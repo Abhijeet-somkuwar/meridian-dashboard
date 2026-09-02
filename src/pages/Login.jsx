@@ -6,6 +6,7 @@ import { useAuth } from '../store/auth.js';
 import { auth as authApi } from '../api/endpoints.js';
 import { Button, Field, Input, PasswordInput } from '../components/ui/index.jsx';
 import { LogoTile } from '../components/ui/Logo.jsx';
+import { applyTheme, storedTheme } from '../lib/theme.js';
 
 /**
  * Sign-in, in two steps: password, then a six-digit code emailed to the account.
@@ -19,6 +20,12 @@ import { LogoTile } from '../components/ui/Logo.jsx';
 const CODE_LENGTH = 6;
 
 export default function Login() {
+  // This page is the poster: always dark, whatever the in-app theme choice.
+  useEffect(() => {
+    applyTheme('dark');
+    return () => applyTheme(storedTheme());
+  }, []);
+
   const { status, login, verify } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();

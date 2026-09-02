@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { auth as authApi } from '../api/endpoints.js';
 import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { Logo } from '../components/ui/Logo.jsx';
+import { applyTheme, storedTheme } from '../lib/theme.js';
 
 /**
  * The front door.
@@ -22,6 +23,12 @@ export default function Landing() {
   // means the sign-in they click next is answered by a server that is up.
   useEffect(() => {
     authApi.ping();
+  }, []);
+
+  // This page is the poster: always dark, whatever the in-app theme choice.
+  useEffect(() => {
+    applyTheme('dark');
+    return () => applyTheme(storedTheme());
   }, []);
 
   return (

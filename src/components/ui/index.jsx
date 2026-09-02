@@ -86,14 +86,17 @@ export const CardHeader = ({ title, subtitle, action, icon: Icon }) => (
   </div>
 );
 
-export const PageHeader = ({ title, subtitle, actions, badge }) => (
+export const PageHeader = ({ title, subtitle, actions, badge, leading }) => (
   <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-    <div>
-      <div className="flex items-center gap-2.5">
-        <h1 className="text-xl font-semibold text-ink">{title}</h1>
-        {badge}
+    <div className={leading ? 'flex items-start gap-3' : undefined}>
+      {leading}
+      <div>
+        <div className="flex items-center gap-2.5">
+          <h1 className="text-xl font-semibold text-ink">{title}</h1>
+          {badge}
+        </div>
+        {subtitle && <p className="text-sm text-muted mt-1">{subtitle}</p>}
       </div>
-      {subtitle && <p className="text-sm text-muted mt-1">{subtitle}</p>}
     </div>
     {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
   </div>
@@ -124,6 +127,44 @@ export const Badge = ({ tone = 'neutral', className, children, icon: Icon }) => 
   </span>
 );
 
+/**
+ * The client's own mark: the logo the audit found, falling back to Google's
+ * favicon service, falling back to a lettered tile. Never renders broken.
+ */
+export const ClientLogo = ({ client, size = 28, className }) => {
+  const [step, setStep] = useState(0);
+  const domain = client?.domain?.replace(/^www\./, '');
+  const sources = [
+    client?.logo_url,
+    domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=64` : null,
+  ].filter(Boolean);
+  const src = sources[step];
+  const initial = (client?.business_name ?? '?').trim().charAt(0).toUpperCase() || '?';
+  if (!src) {
+    return (
+      <span
+        className={clsx('inline-grid place-items-center rounded-lg bg-primary-soft text-primary font-semibold shrink-0', className)}
+        style={{ width: size, height: size, fontSize: Math.round(size * 0.45) }}
+        aria-hidden="true"
+      >
+        {initial}
+      </span>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setStep(step + 1)}
+      className={clsx('rounded-lg object-contain bg-surface-2 shrink-0', className)}
+      style={{ width: size, height: size }}
+    />
+  );
+};
+
 export const PlatformBadge = ({ type, stack }) => {
   const labels = { wordpress: 'WP', php: 'PHP', shopify: 'Shopify', wix: 'Wix', custom: 'Dev-built', other: 'Site' };
   const tone = type === 'wordpress' ? 'primary' : type === 'php' ? 'warning' : 'neutral';
@@ -141,9 +182,15 @@ export const EngineBadge = ({ engine }) => {
         Claude
       </Badge>
     );
+  if (engine === 'groq')
+    return (
+      <Badge tone="primary" icon={Sparkles} title="Groq free tier - OpenAI gpt-oss-120b">
+        Groq
+      </Badge>
+    );
   if (engine === 'gemini')
     return (
-      <Badge tone="warning" icon={Sparkles} title="Temporary: running on Gemini while testing">
+      <Badge tone="warning" icon={Sparkles} title="Running on Gemini">
         Gemini
       </Badge>
     );
@@ -429,7 +476,7 @@ export const HealthRing = ({ score, size = 56 }) => {
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#2A2D3A" strokeWidth="5" />
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#7C8698" strokeOpacity="0.25" strokeWidth="5" />
         <circle
           cx={size / 2}
           cy={size / 2}

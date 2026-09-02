@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import {
   Bell,
+  Moon,
+  Sun,
   Building2,
   ChevronDown,
   CircleHelp,
@@ -21,6 +23,7 @@ import { stepsForPath } from '../../lib/tourSteps.js';
 import { dashboard } from '../../api/endpoints.js';
 import { fmtRelative } from '../../lib/format.js';
 import { Badge, Button, EmptyState } from '../ui/index.jsx';
+import { applyTheme, currentTheme, setTheme, storedTheme } from '../../lib/theme.js';
 import { Logo } from '../ui/Logo.jsx';
 
 const NAV = [
@@ -65,6 +68,31 @@ const HelpButton = () => {
     >
       <CircleHelp className="w-4 h-4" />
       <span className="hidden sm:block">Help</span>
+    </button>
+  );
+};
+
+const ThemeToggle = () => {
+  const [theme, setThemeState] = useState(currentTheme());
+  // The public pages force dark; landing back in the app restores the choice.
+  useEffect(() => {
+    applyTheme(storedTheme());
+    setThemeState(storedTheme());
+  }, []);
+  const flip = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    setThemeState(next);
+  };
+  const Icon = theme === 'light' ? Moon : Sun;
+  return (
+    <button
+      onClick={flip}
+      title={theme === 'light' ? 'Switch to the dark theme' : 'Switch to the light theme'}
+      aria-label="Switch theme"
+      className="w-9 h-9 grid place-items-center rounded-lg text-muted hover:text-ink hover:bg-surface-2 transition-colors"
+    >
+      <Icon className="w-4 h-4" />
     </button>
   );
 };
@@ -248,6 +276,7 @@ export const Shell = () => {
             aria-label="Open navigation"
           />
           <div className="flex-1" />
+          <ThemeToggle />
           <HelpButton />
           <NotificationBell />
           <AccountMenu />

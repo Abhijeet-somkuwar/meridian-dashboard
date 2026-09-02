@@ -13,7 +13,7 @@ import {
   Search,
 } from 'lucide-react';
 import { campaigns } from '../../api/endpoints.js';
-import { Badge, ErrorState, Loading, PlatformBadge } from '../ui/index.jsx';
+import { Badge, ClientLogo, ErrorState, Loading, PlatformBadge } from '../ui/index.jsx';
 
 const TABS = [
   { to: '.', label: 'Overview', icon: Gauge, end: true },
@@ -50,6 +50,7 @@ export const CampaignShell = () => {
         </NavLink>
 
         <div className="flex flex-wrap items-center gap-3">
+          <ClientLogo client={campaign} size={32} />
           <h1 className="text-xl font-semibold">{campaign.business_name}</h1>
           <PlatformBadge type={campaign.platform_type} stack={campaign.tech_stack} />
           <Badge tone={campaign.status === 'active' ? 'success' : 'primary'}>{phase.label}</Badge>

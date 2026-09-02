@@ -16,6 +16,7 @@ import {
   Modal,
   PageHeader,
   PasswordInput,
+  ClientLogo,
   PlatformBadge,
   Select,
   Textarea,
@@ -144,7 +145,8 @@ export default function ClientProfile() {
       <PageHeader
         title={client.business_name}
         subtitle={client.domain}
-        badge={<PlatformBadge type={client.platform_type} />}
+        badge={<PlatformBadge type={client.platform_type} stack={client.tech_stack} />}
+        leading={<ClientLogo client={client} size={40} />}
         actions={
           campaignData?.campaign && (
             <Link to={`/campaigns/${campaignData.campaign.id}`}>

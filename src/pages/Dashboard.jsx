@@ -22,6 +22,7 @@ import {
   ErrorState,
   Loading,
   PageHeader,
+  ClientLogo,
   PlatformBadge,
   StatTile,
 } from '../components/ui/index.jsx';
@@ -146,6 +147,7 @@ export default function Dashboard() {
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
+                          <ClientLogo client={task} size={20} />
                           <span className="text-sm font-medium text-ink">{task.business_name}</span>
                           <PlatformBadge type={task.platform_type} />
                           <Badge tone="neutral">{task.phase}</Badge>

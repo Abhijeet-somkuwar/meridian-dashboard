@@ -5,11 +5,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg: '#0F1117',
-        surface: '#1A1D27',
-        'surface-2': '#212533',
-        border: '#2A2D3A',
-        'border-strong': '#3A3F52',
+        // Every neutral reads a CSS variable (defined in index.css), so the
+        // light theme is one class on <html> rather than a second stylesheet.
+        bg: 'rgb(var(--c-bg) / <alpha-value>)',
+        surface: 'rgb(var(--c-surface) / <alpha-value>)',
+        'surface-2': 'rgb(var(--c-surface-2) / <alpha-value>)',
+        border: 'rgb(var(--c-border) / <alpha-value>)',
+        'border-strong': 'rgb(var(--c-border-strong) / <alpha-value>)',
         primary: {
           DEFAULT: '#6366F1',
           soft: 'rgba(99, 102, 241, 0.14)',
@@ -18,9 +20,9 @@ export default {
         success: { DEFAULT: '#22C55E', soft: 'rgba(34, 197, 94, 0.14)' },
         warning: { DEFAULT: '#F59E0B', soft: 'rgba(245, 158, 11, 0.14)' },
         danger: { DEFAULT: '#EF4444', soft: 'rgba(239, 68, 68, 0.14)' },
-        ink: '#F1F5F9',
-        muted: '#64748B',
-        'muted-strong': '#94A3B8',
+        ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        muted: 'rgb(var(--c-muted) / <alpha-value>)',
+        'muted-strong': 'rgb(var(--c-muted-strong) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -28,8 +30,8 @@ export default {
       },
       borderRadius: { xl: '12px', lg: '8px' },
       boxShadow: {
-        card: '0 1px 2px rgba(0,0,0,0.4)',
-        lift: '0 8px 24px rgba(0,0,0,0.45)',
+        card: 'var(--shadow-card)',
+        lift: 'var(--shadow-lift)',
       },
       keyframes: {
         'fade-in': { from: { opacity: 0, transform: 'translateY(4px)' }, to: { opacity: 1, transform: 'none' } },

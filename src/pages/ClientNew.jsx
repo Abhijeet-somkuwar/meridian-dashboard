@@ -156,6 +156,7 @@ export default function ClientNew() {
         platform_type: form.platform_type,
         tech_stack: detection?.tech_stack || undefined,
         hosting: detection?.hosting || undefined,
+        logo_url: /^https?:\/\//i.test(detection?.logo_url ?? '') ? detection.logo_url : undefined,
         geo_target: geoTarget || undefined,
         target_cities: form.target_cities,
         languages: form.languages.split(/[,\n]/).map((s) => s.trim()).filter(Boolean),
@@ -279,6 +280,15 @@ export default function ClientNew() {
               >
                 {detecting ? (
                   <Loader2 className="w-4 h-4 mt-0.5 shrink-0 animate-spin text-muted" />
+                ) : detection?.logo_url ? (
+                  <img
+                    src={detection.logo_url}
+                    alt=""
+                    className="w-8 h-8 mt-0.5 shrink-0 rounded-lg object-contain bg-surface-2"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
                 ) : (
                   <ScanSearch className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
                 )}

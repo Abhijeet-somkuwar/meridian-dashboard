@@ -198,12 +198,12 @@ export default function RankTracker() {
                     <div className="h-80 -ml-2" data-tour="rank-chart">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
-                          <CartesianGrid stroke="#2A2D3A" strokeDasharray="3 3" vertical={false} />
+                          <CartesianGrid stroke="#7C8698" strokeOpacity={0.25} strokeDasharray="3 3" vertical={false} />
                           <XAxis
                             dataKey="date"
                             tickFormatter={(d) => fmtDate(d, 'd MMM')}
-                            stroke="#2A2D3A"
-                            tick={{ fill: '#64748B', fontSize: 11 }}
+                            stroke="#7C8698" strokeOpacity={0.4}
+                            tick={{ fill: '#7C8698', fontSize: 11 }}
                             tickLine={false}
                             minTickGap={28}
                           />
@@ -212,20 +212,20 @@ export default function RankTracker() {
                             domain={[1, Math.min(100, maxRank + 4)]}
                             tickCount={6}
                             allowDecimals={false}
-                            stroke="#2A2D3A"
-                            tick={{ fill: '#64748B', fontSize: 11 }}
+                            stroke="#7C8698" strokeOpacity={0.4}
+                            tick={{ fill: '#7C8698', fontSize: 11 }}
                             tickLine={false}
                             width={40}
                             label={{
                               value: 'Position',
                               angle: -90,
                               position: 'insideLeft',
-                              fill: '#64748B',
+                              fill: '#7C8698',
                               fontSize: 11,
                               dy: 30,
                             }}
                           />
-                          <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#3A3F52', strokeWidth: 1 }} />
+                          <Tooltip content={<ChartTooltip />} cursor={{ stroke: '#7C8698', strokeOpacity: 0.5, strokeWidth: 1 }} />
                           {visibleSeries.map((s) => (
                             <Line
                               key={s.keyword}
@@ -234,7 +234,7 @@ export default function RankTracker() {
                               stroke={s.color}
                               strokeWidth={2}
                               dot={false}
-                              activeDot={{ r: 4, strokeWidth: 2, stroke: '#0F1117' }}
+                              activeDot={{ r: 4, strokeWidth: 2, stroke: 'rgb(var(--c-bg))' }}
                               connectNulls
                             />
                           ))}
