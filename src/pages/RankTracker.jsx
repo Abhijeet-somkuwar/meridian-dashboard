@@ -27,6 +27,7 @@ import {
   Tabs,
 } from '../components/ui/index.jsx';
 import { Term } from '../components/ui/Term.jsx';
+import LiveTracking from '../components/ranks/LiveTracking.jsx';
 
 // Validated categorical palette (dark surface). Assigned in fixed order per
 // keyword, never cycled - a filter change must not repaint the survivors.
@@ -325,6 +326,8 @@ export default function RankTracker() {
           </>
         )}
       </Card>
+
+      <LiveTracking campaign={campaign} device={device} />
     </div>
   );
 }

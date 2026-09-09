@@ -35,10 +35,28 @@ const SERVICES = [
     off: 'Falls back to word matching. Still works, just less precise.',
   },
   {
-    key: 'dataforseo',
+    key: 'ranks',
     name: 'Google position data',
-    live: 'Real daily positions and real search volumes.',
-    off: 'Positions and volumes are simulated. Charts look right but the numbers are not real.',
+    live: 'Real positions for the client and every competitor, and real competitor discovery.',
+    off: 'Positions, competitor positions and search volumes are simulated. Add SERPER_API_KEY (free) for real results.',
+  },
+  {
+    key: 'googleAds',
+    name: 'Search volumes (Google Ads Keyword Planner)',
+    live: 'Monthly searches and cost-per-click for every keyword, priced for the client\'s city.',
+    off: 'Volumes are estimates and carry an "est." mark on the Keywords tab. docs/setup-guide.md walks through connecting Keyword Planner.',
+  },
+  {
+    key: 'reddit',
+    name: 'Reddit posting (house account)',
+    live: 'Approved Reddit replies and off-page posts go out from the house account unless a client has its own.',
+    off: 'Replies are drafted and copied by hand. Thread discovery still works. Connect per client on the profile, or set REDDIT_*.',
+  },
+  {
+    key: 'medium',
+    name: 'Medium publishing (house account)',
+    live: 'Medium articles and syndicated posts publish from the house account unless a client has its own.',
+    off: 'Articles are drafted and pasted by hand. Medium stopped issuing tokens in January 2025; only a token created before then can be connected.',
   },
   {
     key: 'gsc',
@@ -64,7 +82,11 @@ const ConnectedServices = () => {
   const { data } = useQuery({ queryKey: ['health'], queryFn: system.health, staleTime: 60_000 });
   if (!data) return null;
 
-  const status = (key) => (key === 'ai' ? data.ai !== 'Offline planner' : data.providers[key]);
+  const status = (key) => {
+    if (key === 'ai') return data.ai !== 'Offline planner';
+    if (key === 'ranks') return Boolean(data.providers.dataforseo || data.providers.serper || data.providers.googleCse);
+    return Boolean(data.providers[key]);
+  };
 
   return (
     <Card>

@@ -137,6 +137,34 @@
   .prose-report p {
     @apply my-2;
   }
+  .prose-report ol {
+    @apply list-decimal pl-5 space-y-1 my-2;
+  }
+  .prose-report blockquote {
+    @apply border-l-2 border-border-strong pl-3 my-3 text-muted;
+  }
+  .prose-report a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .prose-report img {
+    @apply rounded-lg my-3 max-w-full;
+  }
+  .prose-report code {
+    @apply font-mono text-[12px] px-1 py-0.5 rounded bg-surface-2 text-ink;
+  }
+  .prose-report pre {
+    @apply bg-surface-2 rounded-lg p-3 overflow-x-auto my-3 text-xs;
+  }
+  .prose-report pre code {
+    @apply p-0 bg-transparent;
+  }
+  .prose-report hr {
+    @apply border-border my-4;
+  }
+  .prose-report td,
+  .prose-report th {
+    @apply px-3 py-1.5 text-xs;
+  }
 
   /* Each sign-in step arrives on its own rather than the form mutating in
      place, so "password" and "check your email" read as two moments. */

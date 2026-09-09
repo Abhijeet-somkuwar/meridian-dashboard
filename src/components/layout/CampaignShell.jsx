@@ -9,6 +9,7 @@ import {
   Gauge,
   Link2,
   MessageCircleQuestion,
+  Newspaper,
   PenLine,
   Search,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ const TABS = [
   { to: 'keywords', label: 'Keywords', icon: BarChart3, badge: (d) => d?.keywords?.suggested },
   { to: 'onpage', label: 'On-page', icon: PenLine, badge: (d) => d?.suggestions?.pending },
   { to: 'offpage', label: 'Off-page', icon: Link2, badge: (d) => d?.offpage?.pending },
+  { to: 'content', label: 'Content', icon: Newspaper, badge: (d) => d?.content?.drafted },
   { to: 'ranks', label: 'Ranks', icon: BarChart3 },
   { to: 'reports', label: 'Reports', icon: FileText },
   { to: 'ask', label: 'Ask', icon: MessageCircleQuestion },

@@ -140,6 +140,30 @@ export const GLOSSARY = {
     label: 'campaign memory',
     body: 'The record of everything done for this client. The AI reads it before writing anything, so it never repeats work or contradicts itself.',
   },
+  programmatic: {
+    label: 'programmatic pages',
+    body: 'Many pages made from one pattern, like "{service} in {city}". Each is written on its own with local detail, so Google sees real pages rather than one template repeated.',
+  },
+  autopilot: {
+    label: 'content autopilot',
+    body: 'A daily job that plans ideas, writes a set number of articles and, if you allow it, publishes them. It runs at five in the morning and logs everything it did.',
+  },
+  'live-tracking': {
+    label: 'live tracking',
+    body: 'Positions for the client and each chosen competitor, read from the same Google results page. Starred keywords are re-checked every four hours; any row can be refreshed now.',
+  },
+  syndication: {
+    label: 'syndication',
+    body: 'Republishing an article on another site, such as Medium, with a hidden "canonical" link back to the original so Google credits the client site and the two never compete.',
+  },
+  'wiki-citation': {
+    label: 'Wikipedia citation',
+    body: 'A footnote on a Wikipedia article pointing to a page on the site. Only a genuinely reliable page (data, research, a proper guide) qualifies; promotion gets removed and the domain blocked.',
+  },
+  coi: {
+    label: 'conflict of interest',
+    body: 'On Wikipedia, anyone paid by or working for the business. They must not edit the article directly; they request the change on its Talk page and say who they are.',
+  },
 };
 
 export const Tooltip = ({ content, children, className = '' }) => {

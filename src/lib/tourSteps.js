@@ -3,7 +3,8 @@
  *
  * Each step names a real element by its `data-tour` attribute. Keep the copy
  * about *what this does and why*, not about where to click - the ring already
- * shows where.
+ * shows where. Steps whose element is not on screen are dropped when the tour
+ * starts, so one list can cover every tab of a screen.
  */
 
 const t = (name) => `[data-tour="${name}"]`;
@@ -79,9 +80,20 @@ export const TOURS = {
       body: 'Everything typed here goes into every future AI prompt for this client. Niche and target cities drive keyword research; the platform choice decides how paste instructions are written.',
     },
     {
+      selector: t('new-detect'),
+      title: 'Read from the site itself',
+      body: 'As soon as a domain is typed, Meridian opens the homepage and works out how it is built - WordPress, Shopify, a PHP theme, a React app. The platform field fills itself unless you have already chosen.',
+    },
+    {
       selector: t('new-nap'),
       title: 'The NAP block',
       body: 'Name, address and phone, exactly as they should appear everywhere. Directory listings reuse this verbatim - consistent NAP across sites is what local ranking is built on.',
+    },
+    {
+      selector: t('new-competitors'),
+      title: 'Choose the competitors, do not guess them',
+      body: 'Runs several searches for the trade in the city, adds the Google Maps pack, opens every site and scores how directly it competes. You tick the four or five that really sell the same thing to the same customers; they are tracked on every keyword next to the client.',
+      tip: 'Needs the trade and at least one city filled in first. There is a Help button inside the picker too.',
     },
     {
       selector: t('new-audit'),
@@ -90,11 +102,65 @@ export const TOURS = {
     },
   ],
 
+  /** Started from the Help button inside the competitor picker itself. */
+  competitorPicker: [
+    {
+      selector: t('picker-search'),
+      title: 'Search the way a customer would',
+      body: 'The first pass already ran six phrasings - the trade, the city, "near me", "contact number" and so on - and merged them. Add your own words here when the trade has a local name the model would not know.',
+    },
+    {
+      selector: t('picker-list'),
+      title: 'Every site was opened and scored',
+      body: 'Green means the model read the site and found the same service for the same customers. Amber is partial overlap - a marketplace, a supplier, a franchise. Red is not a competitor at all. The bar is how similar the business is; the Maps badge means it is in the local pack with real reviews.',
+      tip: 'Open a site with the arrow before ticking it. Two minutes here saves a month of tracking the wrong company.',
+    },
+    {
+      selector: t('picker-select'),
+      title: 'The shortcut',
+      body: 'Ticks everything the model marked as a direct competitor. Check the list afterwards; it is a recommendation, not a decision.',
+    },
+    {
+      selector: t('picker-maps'),
+      title: 'Competing for the calls, not the clicks',
+      body: 'Businesses in the Google Maps pack with no website of their own. They cannot be tracked on Google positions, but they are who the client loses phone calls to - worth knowing when the client asks why the phone is quiet.',
+    },
+    {
+      selector: t('picker-more'),
+      title: 'Not the right ones yet?',
+      body: 'Runs a fresh set of phrasings and adds anything new to the list. Each run costs a few search credits.',
+    },
+    {
+      selector: t('picker-add'),
+      title: 'Four or five, not ten',
+      body: 'Every chosen competitor is checked on every keyword, every night. Ten loose ones cost search credits and blur the report; four direct ones tell the client exactly who is beating them and where.',
+    },
+  ],
+
+  clientProfile: [
+    {
+      selector: t('profile-integrations'),
+      title: 'What Meridian can publish to',
+      body: 'Each card is one connection: the client\'s own CMS (WordPress, Webflow, Ghost or Shopify), Search Console for real impressions, and the community accounts. Only scoped, revocable credentials are ever stored, and each is verified before it is saved.',
+      tip: 'Search Console unlocks two things at once: topic ideas from real impressions, and a weekly check for published pages nobody is seeing.',
+    },
+    {
+      selector: t('profile-competitors'),
+      title: 'The tracked competitors',
+      body: 'Chosen during onboarding, editable here. Each one is checked on every keyword next to the client, and the AI reads this list before planning any content.',
+    },
+    {
+      selector: t('profile-details'),
+      title: 'The campaign seed',
+      body: 'Every field here goes into every AI prompt for this client. Change the niche or the cities and the next keyword research, content plan and off-page task reflect it.',
+    },
+  ],
+
   campaignOverview: [
     {
       selector: t('campaign-tabs'),
       title: 'The campaign workspace',
-      body: 'Left to right is roughly the order work happens: audit the site, map keywords, write on-page content, run off-page, watch ranks, report to the client.',
+      body: 'Left to right is roughly the order work happens: audit the site, map keywords, write on-page content, run off-page, publish content at scale, watch ranks, report to the client.',
       tip: 'A number on a tab means something there is waiting on you.',
     },
     {
@@ -147,7 +213,8 @@ export const TOURS = {
     {
       selector: t('kw-research'),
       title: 'Research',
-      body: 'Pulls search volume and difficulty for every candidate, then maps exactly one primary keyword to each page with supporting terms around it. Safe to run more than once - existing keywords are updated, not duplicated.',
+      body: 'Expands the trade and the cities into what people actually type, prices every candidate, then maps exactly one primary keyword to each page with supporting terms around it. Safe to run more than once - existing keywords are updated, not duplicated.',
+      tip: 'Volumes marked "est." are estimates. Connect Google Ads Keyword Planner and they become Google\'s own numbers for the client\'s city.',
     },
     {
       selector: t('kw-tabs'),
@@ -215,6 +282,90 @@ export const TOURS = {
     },
   ],
 
+  content: [
+    {
+      selector: t('content-stats'),
+      title: 'The content engine, in four numbers',
+      body: 'What went live in the last thirty days, what is waiting for your review, how many ideas are queued, and whether the autopilot is running. The review queue is the one to keep at zero.',
+    },
+    {
+      selector: t('content-tabs'),
+      title: 'Six kinds of content, one pipeline',
+      body: 'Blog posts at scale, programmatic pages from a template, Reddit replies, Quora answers and Medium pieces, Wikipedia citations - and the autopilot that keeps them moving. Every piece goes idea, drafted, approved, published, and nothing is published without a person saying so unless you switch that on.',
+    },
+    {
+      selector: t('content-plan'),
+      title: 'Plan ideas',
+      body: 'Asks the model for a batch of article ideas from three pools: the confirmed keywords, the phrases where a chosen competitor outranks the client, and - when Search Console is connected - the searches the site already appears for with no page behind them. Each idea carries its keyword, an angle and an outline.',
+    },
+    {
+      selector: t('content-write'),
+      title: 'Write the next few',
+      body: 'Drafts the next ideas in the calendar: 1,200-1,800 words, a FAQ built from the questions Google shows for the keyword, internal links to real pages, meta title and description. Drafts land in the review queue.',
+    },
+    {
+      selector: t('content-gsc'),
+      title: 'Free topics from Search Console',
+      body: 'Searches Google already shows the site for, with no keyword and no page behind them. Real impressions, real positions. Tick the ones worth a page and add them to the keyword list; planning uses the top of this list on its own.',
+    },
+    {
+      selector: t('content-list'),
+      title: 'The review queue',
+      body: 'Open a piece to read it, edit it, approve it or send it back. Tick several to draft or approve in one go. "auto" marks what the autopilot did while you were away.',
+      tip: '"no impressions" on a published piece means Search Console has not shown it to anyone lately - see the Programmatic tab.',
+    },
+    {
+      selector: t('content-template'),
+      title: 'One pattern, hundreds of pages',
+      body: '"{service} in {city}" with a list of services and cities becomes one page per combination, each written on its own with local detail. Two pages sharing more than a sentence is treated as a failure.',
+    },
+    {
+      selector: t('content-generate'),
+      title: 'Generate the pages',
+      body: 'Queues every combination as an idea and writes the number you chose right away. The rest are picked up by the autopilot at its daily rate.',
+    },
+    {
+      selector: t('content-prune'),
+      title: 'Pages nobody is seeing',
+      body: 'Every Sunday, pages published more than two months ago are checked against Search Console. Under five impressions in four weeks means the page is thinning the site rather than helping it. Keep the ones you believe in; Take down sets the rest back to draft on the CMS.',
+    },
+    {
+      selector: t('content-discover'),
+      title: 'Find the conversations',
+      body: 'Searches Reddit for threads in the client\'s country where people are asking about the trade. Each thread becomes a reply that answers first and discloses the affiliation, and any thread can become a blog post that ranks for the same question.',
+    },
+    {
+      selector: t('content-quora'),
+      title: 'Questions Google already ranks',
+      body: 'Finds the Quora questions that appear in Google for the campaign\'s keywords, so an answer there is seen by the client\'s own customers. Quora has no API: answers are pasted by hand and the URL recorded.',
+    },
+    {
+      selector: t('content-wiki'),
+      title: 'Wikipedia, done properly',
+      body: 'Tracks where the business is already cited or named, and finds "citation needed" gaps in articles about the trade and the city. Meridian drafts the citation and the Talk-page request; a person with a declared conflict of interest posts it. It never edits Wikipedia.',
+    },
+    {
+      selector: t('autopilot-toggle'),
+      title: 'Hands off',
+      body: 'On means every morning at 05:00 the backlog is topped up, the day\'s quota is written, and - only if you allow it below - published. Everything it does is logged as automated so the client report can say what the machine did.',
+    },
+    {
+      selector: t('autopilot-quota'),
+      title: 'How much',
+      body: 'Pieces per day is the pace; the monthly target is the ceiling. Three a day is ninety a month; ten a day is three hundred. The limit is the model budget, not the software.',
+    },
+    {
+      selector: t('autopilot-publish'),
+      title: 'Publishing without clicking',
+      body: 'Pushes drafts to whichever of the client\'s CMSs is connected - WordPress, Webflow, Ghost or Shopify. "Draft in the CMS" keeps a human between the model and the live site; "Live immediately" does not. Start with draft.',
+    },
+    {
+      selector: t('autopilot-run'),
+      title: 'Try it now',
+      body: 'Runs one pass immediately with the settings above, whatever the schedule. Good for seeing what a day of autopilot produces before leaving it on.',
+    },
+  ],
+
   ranks: [
     {
       selector: t('rank-controls'),
@@ -226,6 +377,11 @@ export const TOURS = {
       title: 'Lower is better',
       body: 'The axis is inverted, so a line rising on this chart means the keyword is climbing. Six keywords are plotted; the rest are in the table view.',
       tip: 'Click a keyword in the legend to hide or show its line.',
+    },
+    {
+      selector: t('rank-live'),
+      title: 'The client against every competitor',
+      body: 'One row per keyword, one column per chosen competitor, from the same results page the client\'s position came from. Star a keyword and it is re-checked every four hours instead of nightly.',
     },
     {
       selector: t('rank-check'),
@@ -298,7 +454,7 @@ export const stepsForPath = (pathname) => {
   if (pathname === '/') return TOURS.dashboard;
   if (pathname === '/clients') return TOURS.clients;
   if (pathname === '/clients/new') return TOURS.clientNew;
-  if (/^\/clients\/[^/]+$/.test(pathname)) return TOURS.clients;
+  if (/^\/clients\/[^/]+$/.test(pathname)) return TOURS.clientProfile;
   if (pathname === '/admin') return TOURS.admin;
   if (pathname === '/settings') return TOURS.settings;
 
@@ -311,6 +467,7 @@ export const stepsForPath = (pathname) => {
         keywords: TOURS.keywords,
         onpage: TOURS.onpage,
         offpage: TOURS.offpage,
+        content: TOURS.content,
         ranks: TOURS.ranks,
         reports: TOURS.reports,
         ask: TOURS.ask,

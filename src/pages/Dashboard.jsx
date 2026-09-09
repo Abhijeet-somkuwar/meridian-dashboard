@@ -36,6 +36,7 @@ const CATEGORY_TONE = {
   onpage: 'primary',
   technical: 'warning',
   offpage: 'success',
+  content: 'primary',
   rank: 'neutral',
   report: 'primary',
   system: 'neutral',
@@ -101,9 +102,9 @@ export default function Dashboard() {
         />
         <StatTile
           label="Pending tasks"
-          value={stats.pending_suggestions + stats.pending_offpage}
-          hint={`${stats.pending_suggestions} website · ${stats.pending_offpage} listings`}
-          tone={stats.pending_suggestions + stats.pending_offpage ? 'warning' : 'neutral'}
+          value={stats.pending_suggestions + stats.pending_offpage + (stats.content_to_review ?? 0)}
+          hint={`${stats.pending_suggestions} website · ${stats.pending_offpage} listings · ${stats.content_to_review ?? 0} articles`}
+          tone={stats.pending_suggestions + stats.pending_offpage + (stats.content_to_review ?? 0) ? 'warning' : 'neutral'}
           icon={ListTodo}
         />
         <StatTile

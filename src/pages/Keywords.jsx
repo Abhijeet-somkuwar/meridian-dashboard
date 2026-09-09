@@ -52,7 +52,7 @@ export default function Keywords() {
       setSeedModal(false);
       setSeeds('');
       invalidate();
-      toast.success(`${res.keywords.length} keywords mapped across ${res.pages.length} pages`);
+      toast.success(`${res.keywords.length} keywords mapped across ${res.pages.length} pages${res.volume_source === 'simulated' ? ' (volumes estimated)' : ''}`);
       if (res.warning) toast(`Model fell back to the offline planner: ${res.warning}`, { icon: '⚠️' });
     },
     onError: (err) => toast.error(err.message),
@@ -238,7 +238,14 @@ export default function Keywords() {
                       <Badge tone={TYPE_TONE[k.keyword_type]}>{k.keyword_type}</Badge>
                     </td>
                     <td className="font-mono text-xs text-muted-strong">{k.target_page}</td>
-                    <td className="text-right tabular-nums">{fmtNumber(k.search_volume)}</td>
+                    <td className="text-right tabular-nums">
+                      {fmtNumber(k.search_volume)}
+                      {k.search_volume != null && (!k.volume_source || k.volume_source === 'simulated') && (
+                        <span className="ml-1 text-[10px] text-muted" title="Estimated - connect Google Ads Keyword Planner for real volumes">
+                          est.
+                        </span>
+                      )}
+                    </td>
                     <td className="text-right">
                       <Badge tone={difficultyTone(k.difficulty)}>{k.difficulty ?? '—'}</Badge>
                     </td>

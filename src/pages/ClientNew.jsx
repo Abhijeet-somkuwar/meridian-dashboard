@@ -17,7 +17,10 @@ import {
   Textarea,
 } from '../components/ui/index.jsx';
 import { CityPicker } from '../components/ui/CityPicker.jsx';
+import { CompetitorPicker } from '../components/ui/CompetitorPicker.jsx';
 import { Term } from '../components/ui/Term.jsx';
+
+const RELATIONSHIP_TONE = { direct: 'success', partial: 'warning', not_competitor: 'danger' };
 
 const MAX_COMPETITORS = 10;
 
@@ -128,23 +131,15 @@ export default function ClientNew() {
     setCompetitorInput('');
   };
 
-  const suggest = useMutation({
-    mutationFn: () =>
-      geo.suggestCompetitors({
-        domain: form.domain,
-        niche: form.niche,
-        city: form.target_cities[0],
-        country: form.country,
-      }),
-    onSuccess: (res) => {
-      const fresh = res.competitors.filter((c) => !competitors.some((x) => x.domain === c.domain));
-      const room = MAX_COMPETITORS - competitors.length;
-      setCompetitors((list) => [...list, ...fresh.slice(0, room)]);
-      if (!fresh.length) toast(res.note || 'No new suggestions', { duration: 6000 });
-      else toast.success(`${Math.min(fresh.length, room)} suggested - open each one to check it`);
-    },
-    onError: (err) => toast.error(err.message),
-  });
+  // The picker runs several searches, opens each site and scores it; the
+  // manager ticks the ones that are really the same business in the same city.
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const addChosen = (chosen) => {
+    const fresh = chosen.filter((c) => !competitors.some((x) => x.domain === c.domain));
+    const room = MAX_COMPETITORS - competitors.length;
+    setCompetitors((list) => [...list, ...fresh.slice(0, room)]);
+    if (fresh.length) toast.success(`${Math.min(fresh.length, room)} competitor${fresh.length === 1 ? '' : 's'} added`);
+  };
 
   // --- submit ---------------------------------------------------------------
 
@@ -166,6 +161,16 @@ export default function ClientNew() {
         contact_email: form.contact_email.trim() || undefined,
         nap_address: form.nap_address.trim() || undefined,
         competitor_urls: competitors.map((c) => `https://${c.domain}`),
+        competitors: competitors.map((c) => ({
+          domain: c.domain,
+          name: c.name,
+          reason: c.reason,
+          similarity: c.similarity,
+          relationship: c.relationship,
+          verified: c.verified,
+          description: c.description ?? null,
+          url: c.url,
+        })),
       });
 
       if (runAudit) {
@@ -441,16 +446,16 @@ export default function ClientNew() {
         <Card>
           <CardHeader
             title="Competitors"
-            subtitle="Other businesses showing up in Google for the same searches. Optional, but it makes the keyword work sharper."
+            subtitle="The businesses a customer would choose between. Optional, but it sharpens the keywords, and their positions are tracked next to the client's."
             action={
               <Button
                 type="button"
                 size="sm"
                 icon={Sparkles}
-                onClick={() => suggest.mutate()}
-                loading={suggest.isPending}
+                onClick={() => setPickerOpen(true)}
                 disabled={!canSuggest || competitors.length >= MAX_COMPETITORS}
-                title={canSuggest ? 'Find likely competitors' : 'Fill in the trade and at least one city first'}
+                title={canSuggest ? 'Search, then pick the real ones' : 'Fill in the trade and at least one city first'}
+                data-tour="new-competitors"
               >
                 Find competitors
               </Button>
@@ -482,9 +487,9 @@ export default function ClientNew() {
 
             {competitors.length === 0 ? (
               <p className="text-xs text-muted">
-                Not sure who they are? Search Google for “{form.niche || 'your trade'}
-                {form.target_cities[0] ? ` in ${form.target_cities[0]}` : ''}” and copy the first few business
-                websites — skip Justdial, IndiaMart and Facebook, those are directories rather than competitors.
+                Press <b>Find competitors</b>: several searches for “{form.niche || 'your trade'}
+                {form.target_cities[0] ? ` in ${form.target_cities[0]}` : ''}” are merged, each site is opened and scored, and you
+                tick the four or five that really compete. Directories like Justdial and IndiaMart are filtered out.
               </p>
             ) : (
               <div className="space-y-2">
@@ -495,7 +500,12 @@ export default function ClientNew() {
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm text-ink truncate">{c.domain}</span>
+                        {c.name && c.name !== c.domain && <span className="text-sm text-ink font-medium truncate max-w-[200px]">{c.name}</span>}
+                        <span className={`text-sm truncate ${c.name && c.name !== c.domain ? 'text-muted font-mono text-xs' : 'text-ink'}`}>{c.domain}</span>
+                        {c.relationship && RELATIONSHIP_TONE[c.relationship] && (
+                          <Badge tone={RELATIONSHIP_TONE[c.relationship]}>{c.relationship.replace('_', ' ')}</Badge>
+                        )}
+                        {c.similarity != null && <span className="text-[11px] text-muted tabular-nums">{c.similarity}/100</span>}
                         {!c.verified && (
                           <Badge tone="warning" icon={TriangleAlert}>
                             check this
@@ -522,9 +532,10 @@ export default function ClientNew() {
             )}
 
             <p className="text-xs text-muted">
-              {competitors.length} of {MAX_COMPETITORS} added.
-              {suggest.data?.source && suggest.data.source !== 'serp' && competitors.some((c) => !c.verified) && (
-                <span className="text-warning"> Suggested ones are guesses — open each and confirm it is real.</span>
+              {competitors.length} of {MAX_COMPETITORS} added. Four or five direct competitors beat ten loose ones - every one is tracked
+              on every keyword.
+              {competitors.some((c) => !c.verified) && (
+                <span className="text-warning"> Unverified ones are model guesses — open each and confirm it is real.</span>
               )}
             </p>
           </div>
@@ -546,6 +557,21 @@ export default function ClientNew() {
           </div>
         </div>
       </form>
+
+      <CompetitorPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        seed={{
+          domain: stripProtocol(form.domain),
+          business_name: form.business_name,
+          niche: form.niche,
+          city: form.target_cities[0],
+          country: form.country,
+        }}
+        existing={competitors.map((c) => c.domain)}
+        max={MAX_COMPETITORS}
+        onAdd={addChosen}
+      />
     </div>
   );
 }

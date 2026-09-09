@@ -17,6 +17,7 @@ import AuditResults from './pages/AuditResults.jsx';
 import Keywords from './pages/Keywords.jsx';
 import OnPage from './pages/OnPage.jsx';
 import OffPage from './pages/OffPage.jsx';
+import Content from './pages/content/Content.jsx';
 import RankTracker from './pages/RankTracker.jsx';
 import Reports from './pages/Reports.jsx';
 import Ask from './pages/Ask.jsx';
@@ -124,6 +125,7 @@ export default function App() {
             <Route path="keywords" element={<Keywords />} />
             <Route path="onpage" element={<OnPage />} />
             <Route path="offpage" element={<OffPage />} />
+            <Route path="content" element={<Content />} />
             <Route path="ranks" element={<RankTracker />} />
             <Route path="reports" element={<Reports />} />
             <Route path="ask" element={<Ask />} />

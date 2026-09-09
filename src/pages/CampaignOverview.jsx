@@ -7,6 +7,7 @@ import {
   FileText,
   Gauge,
   Link2,
+  Newspaper,
   PenLine,
   Search,
   Sparkles,
@@ -39,6 +40,7 @@ const CATEGORY_TONE = {
   onpage: 'primary',
   technical: 'warning',
   offpage: 'success',
+  content: 'primary',
   rank: 'neutral',
   report: 'primary',
   system: 'neutral',
@@ -89,8 +91,15 @@ export default function CampaignOverview() {
   });
 
   const { keywords, suggestions, ranks, offpage, audit, report, activity } = overview;
+  const content = overview.content ?? { ideas: 0, drafted: 0, published: 0, published_30d: 0, autopilot: false };
 
   const nextSteps = [
+    content.drafted > 0 && {
+      to: 'content',
+      icon: Newspaper,
+      title: `${content.drafted} article${content.drafted === 1 ? '' : 's'} drafted and waiting for review`,
+      body: 'Read, approve and publish - or reject and the autopilot moves on.',
+    },
     keywords.suggested > 0 && {
       to: 'keywords',
       icon: BarChart3,
@@ -141,7 +150,7 @@ export default function CampaignOverview() {
         </div>
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatTile
           label="Search phrases"
           value={keywords.confirmed}
@@ -168,6 +177,13 @@ export default function CampaignOverview() {
           hint={offpage.pending ? `${offpage.pending} waiting on you` : 'Queue clear'}
           tone={offpage.pending ? 'warning' : 'success'}
           icon={Link2}
+        />
+        <StatTile
+          label="Content published, 30d"
+          value={content.published_30d}
+          hint={content.drafted ? `${content.drafted} to review · ${content.ideas} ideas` : content.autopilot ? 'Autopilot on' : `${content.ideas} ideas queued`}
+          tone={content.drafted ? 'warning' : content.published_30d ? 'success' : 'neutral'}
+          icon={Newspaper}
         />
       </div>
 

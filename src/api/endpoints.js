@@ -27,7 +27,14 @@ export const system = {
 export const geo = {
   countries: () => unwrap(api.get('/geo/countries')),
   cities: (country, q, limit = 12) => unwrap(api.get('/geo/cities', { params: { country, q, limit } })),
-  suggestCompetitors: (body) => unwrap(api.post('/geo/competitors', body)),
+  // Several searches, merged, then each site opened and scored - slow by design.
+  suggestCompetitors: (body, signal) => unwrap(api.post('/geo/competitors', body, { signal, timeout: 120_000 })),
+};
+
+export const integrations = {
+  list: (clientId) => unwrap(api.get(`/integrations/${clientId}`)),
+  connect: (clientId, platform, body) => unwrap(api.post(`/integrations/${clientId}/${platform}`, body)),
+  disconnect: (clientId, platform) => unwrap(api.delete(`/integrations/${clientId}/${platform}`)),
 };
 
 export const clients = {
@@ -70,6 +77,7 @@ export const keywords = {
     unwrap(api.patch(`/keywords/${campaignId}/${keywordId}/status`, { status })),
   bulkStatus: (campaignId, ids, status) => unwrap(api.patch(`/keywords/${campaignId}/bulk-status`, { ids, status })),
   lock: (campaignId) => unwrap(api.post(`/keywords/${campaignId}/lock`)),
+  watch: (campaignId, keywordId, is_watched) => unwrap(api.patch(`/keywords/${campaignId}/${keywordId}/watch`, { is_watched })),
 };
 
 export const suggestions = {
@@ -100,8 +108,56 @@ export const offpage = {
 
 export const ranks = {
   get: (campaignId, params) => unwrap(api.get(`/ranks/${campaignId}`, { params })),
-  check: (campaignId, device) => unwrap(api.post(`/ranks/${campaignId}/check`, { device })),
+  check: (campaignId, device, watched_only = false) =>
+    unwrap(api.post(`/ranks/${campaignId}/check`, { device, watched_only }, { timeout: 300_000 })),
+  // One keyword, right now - a single results page, so it is quick.
+  checkOne: (campaignId, keywordId, device) =>
+    unwrap(api.post(`/ranks/${campaignId}/check/${keywordId}`, { device }, { timeout: 90_000 })),
+  live: (campaignId, params) => unwrap(api.get(`/ranks/${campaignId}/live`, { params })),
+  competitorSeries: (campaignId, keywordId, params) => unwrap(api.get(`/ranks/${campaignId}/live/${keywordId}`, { params })),
   syncGsc: (campaignId) => unwrap(api.post(`/ranks/${campaignId}/sync-gsc`)),
+};
+
+// Drafting an article is a long model call; the timeouts below are generous
+// on purpose so a slow provider finishes rather than being abandoned mid-write.
+const LONG = { timeout: 240_000 };
+const VERY_LONG = { timeout: 600_000 };
+
+export const content = {
+  summary: (campaignId) => unwrap(api.get(`/content/${campaignId}`)),
+  settings: (campaignId, body) => unwrap(api.patch(`/content/${campaignId}/settings`, body)),
+  runAutopilot: (campaignId) => unwrap(api.post(`/content/${campaignId}/autopilot/run`, undefined, VERY_LONG)),
+  pieces: (campaignId, params) => unwrap(api.get(`/content/${campaignId}/pieces`, { params })),
+  piece: (campaignId, id) => unwrap(api.get(`/content/${campaignId}/pieces/${id}`)),
+  plan: (campaignId, body) => unwrap(api.post(`/content/${campaignId}/plan`, body, LONG)),
+  bulkDraft: (campaignId, body) => unwrap(api.post(`/content/${campaignId}/bulk-draft`, body, VERY_LONG)),
+  bulkStatus: (campaignId, ids, status) => unwrap(api.patch(`/content/${campaignId}/bulk-status`, { ids, status })),
+  update: (campaignId, id, body) => unwrap(api.patch(`/content/${campaignId}/pieces/${id}`, body)),
+  remove: (campaignId, id) => unwrap(api.delete(`/content/${campaignId}/pieces/${id}`)),
+  draft: (campaignId, id) => unwrap(api.post(`/content/${campaignId}/pieces/${id}/draft`, undefined, LONG)),
+  setStatus: (campaignId, id, status) => unwrap(api.patch(`/content/${campaignId}/pieces/${id}/status`, { status })),
+  publish: (campaignId, id, body) => unwrap(api.post(`/content/${campaignId}/pieces/${id}/publish`, body, LONG)),
+  syndicate: (campaignId, id) => unwrap(api.post(`/content/${campaignId}/pieces/${id}/syndicate`)),
+  toBlog: (campaignId, id) => unwrap(api.post(`/content/${campaignId}/pieces/${id}/to-blog`)),
+  templates: (campaignId) => unwrap(api.get(`/content/${campaignId}/templates`)),
+  saveTemplate: (campaignId, body) => unwrap(api.post(`/content/${campaignId}/templates`, body)),
+  previewTemplate: (campaignId, body) => unwrap(api.post(`/content/${campaignId}/templates/preview`, body)),
+  deleteTemplate: (campaignId, id) => unwrap(api.delete(`/content/${campaignId}/templates/${id}`)),
+  generateTemplate: (campaignId, id, body) => unwrap(api.post(`/content/${campaignId}/templates/${id}/generate`, body, VERY_LONG)),
+  discoverReddit: (campaignId, body) => unwrap(api.post(`/content/${campaignId}/reddit/discover`, body, LONG)),
+  discoverQuora: (campaignId, body) => unwrap(api.post(`/content/${campaignId}/quora/discover`, body, LONG)),
+  wikipedia: (campaignId) => unwrap(api.get(`/content/${campaignId}/wikipedia`)),
+  wikiScan: (campaignId) => unwrap(api.post(`/content/${campaignId}/wikipedia/scan`, undefined, LONG)),
+  wikiDraft: (campaignId, id) => unwrap(api.post(`/content/${campaignId}/wikipedia/${id}/draft`, undefined, LONG)),
+  wikiStatus: (campaignId, id, status) => unwrap(api.patch(`/content/${campaignId}/wikipedia/${id}/status`, { status })),
+  wikiRemove: (campaignId, id) => unwrap(api.delete(`/content/${campaignId}/wikipedia/${id}`)),
+  // Search Console as a topic pool, and the pages it says nobody sees.
+  opportunities: (campaignId) => unwrap(api.get(`/content/${campaignId}/opportunities`, { timeout: 60_000 })),
+  adoptQueries: (campaignId, queries) => unwrap(api.post(`/content/${campaignId}/opportunities/adopt`, { queries })),
+  pruneList: (campaignId) => unwrap(api.get(`/content/${campaignId}/prune`)),
+  pruneScan: (campaignId) => unwrap(api.post(`/content/${campaignId}/prune/scan`, undefined, LONG)),
+  unpublish: (campaignId, id) => unwrap(api.post(`/content/${campaignId}/pieces/${id}/unpublish`, undefined, LONG)),
+  keep: (campaignId, id) => unwrap(api.post(`/content/${campaignId}/pieces/${id}/keep`)),
 };
 
 export const reports = {

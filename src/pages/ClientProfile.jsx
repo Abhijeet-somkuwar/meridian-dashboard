@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, KeyRound, Link2, Plug, Save, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ExternalLink, KeyRound, Link2, Plug, Save, ShieldCheck, Sparkles, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { campaigns, clients } from '../api/endpoints.js';
+import { campaigns, clients, integrations as integrationsApi } from '../api/endpoints.js';
+import { CompetitorPicker } from '../components/ui/CompetitorPicker.jsx';
 import {
   Badge,
   Button,
@@ -24,6 +25,55 @@ import {
 
 const listValue = (arr) => (arr ?? []).join(', ');
 const splitList = (value) => value.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+const RELATIONSHIP_TONE = { direct: 'success', partial: 'warning', not_competitor: 'danger' };
+
+const INTEGRATIONS = {
+  webflow: {
+    name: 'Webflow',
+    what: 'Publishes blog posts and programmatic pages into the site\'s CMS collection, as drafts or live.',
+    how: 'Webflow → Site settings → Apps & integrations → API access → Generate API token with cms:read, cms:write, sites:read',
+    fields: [
+      ['token', 'Site API token', 'password'],
+      ['collection_id', 'Collection id (optional - found automatically when one collection looks like a blog)', 'text'],
+    ],
+  },
+  ghost: {
+    name: 'Ghost',
+    what: 'Publishes blog posts and programmatic pages to the Ghost site, with SEO title and description.',
+    how: 'Ghost admin → Settings → Integrations → Add custom integration → copy the Admin API key',
+    fields: [
+      ['url', 'Site URL (https://blog.example.com)', 'text'],
+      ['admin_key', 'Admin API key (id:secret)', 'password'],
+    ],
+  },
+  shopify: {
+    name: 'Shopify blog',
+    what: 'Publishes blog posts and programmatic pages as articles on the store blog.',
+    how: 'Shopify admin → Settings → Apps and sales channels → Develop apps → Create app → write_content scope → Install → Admin API access token',
+    fields: [
+      ['shop', 'Store address (my-store.myshopify.com)', 'text'],
+      ['token', 'Admin API access token (shpat_…)', 'password'],
+      ['blog_handle', 'Blog handle (optional - "news" or the first blog otherwise)', 'text'],
+    ],
+  },
+  medium: {
+    name: 'Medium',
+    what: 'Publishes Medium articles and syndicated blog posts. Medium stopped issuing new tokens in January 2025 - only a token created before then works; otherwise articles are pasted by hand.',
+    how: 'Medium → Settings → Security and apps → Integration tokens (accounts that had one before 2025)',
+    fields: [['token', 'Integration token', 'password']],
+  },
+  reddit: {
+    name: 'Reddit',
+    what: 'Posts approved replies on discovered threads, and text posts in the off-page rotation.',
+    how: 'reddit.com/prefs/apps → create a "script" app, then the posting account',
+    fields: [
+      ['client_id', 'App client ID', 'text'],
+      ['client_secret', 'App secret', 'password'],
+      ['username', 'Reddit username', 'text'],
+      ['password', 'Reddit password', 'password'],
+    ],
+  },
+};
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -33,15 +83,58 @@ export default function ClientProfile() {
   const [wpModal, setWpModal] = useState(false);
   const [wpForm, setWpForm] = useState({ site: '', username: '', appPassword: '' });
   const [form, setForm] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [intModal, setIntModal] = useState(null);
+  const [intForm, setIntForm] = useState({});
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['client', id],
     queryFn: () => clients.get(id),
   });
-  const { data: campaignData } = useQuery({
+  const { data: campaignData, refetch: refetchCampaign } = useQuery({
     queryKey: ['campaign-for-client', id],
     queryFn: () => campaigns.byClient(id),
     retry: false,
+  });
+  const { data: intData, refetch: refetchIntegrations } = useQuery({
+    queryKey: ['integrations', id],
+    queryFn: () => integrationsApi.list(id),
+  });
+
+  const campaign = campaignData?.campaign;
+  const competitors = Array.isArray(campaign?.competitors) && campaign.competitors.length
+    ? campaign.competitors
+    : (campaign?.competitor_urls ?? []).map((u) => ({ domain: u.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/.*$/, ''), reason: 'Added during onboarding', verified: true }));
+
+  const saveCompetitors = useMutation({
+    mutationFn: (next) => campaigns.update(campaign.id, { competitors: next }),
+    onSuccess: () => {
+      refetchCampaign();
+      queryClient.invalidateQueries({ queryKey: ['campaign', campaign?.id] });
+      queryClient.invalidateQueries({ queryKey: ['ranks-live', campaign?.id] });
+      toast.success('Competitors updated');
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const connectIntegration = useMutation({
+    mutationFn: () => integrationsApi.connect(id, intModal, intForm),
+    onSuccess: (res) => {
+      setIntModal(null);
+      setIntForm({});
+      refetchIntegrations();
+      toast.success(`${INTEGRATIONS[res.platform].name} connected as ${res.username}`);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const disconnectIntegration = useMutation({
+    mutationFn: (platform) => integrationsApi.disconnect(id, platform),
+    onSuccess: () => {
+      refetchIntegrations();
+      toast.success('Disconnected');
+    },
+    onError: (err) => toast.error(err.message),
   });
 
   useEffect(() => {
@@ -70,10 +163,13 @@ export default function ClientProfile() {
   useEffect(() => {
     const gsc = params.get('gsc');
     if (!gsc) return;
-    if (gsc === 'connected') toast.success('Search Console connected');
+    if (gsc === 'connected' && params.get('property') === 'none') {
+      toast('Search Console connected, but no property matched the domain. Set the property URL under Business details.', { icon: '⚠️', duration: 9000 });
+    } else if (gsc === 'connected') toast.success('Search Console connected - topic ideas and pruning are on');
     else toast.error(`Search Console failed: ${params.get('reason') ?? 'unknown error'}`);
     params.delete('gsc');
     params.delete('reason');
+    params.delete('property');
     setParams(params, { replace: true });
     refetch();
   }, [params, setParams, refetch]);
@@ -159,7 +255,7 @@ export default function ClientProfile() {
       />
 
       <div className="space-y-6">
-        <Card>
+        <Card data-tour="profile-integrations">
           <CardHeader
             title="Integrations"
             subtitle="Only scoped, revocable credentials are ever stored"
@@ -200,7 +296,7 @@ export default function ClientProfile() {
                 </Badge>
               </div>
               <p className="text-xs text-muted mb-3">
-                Read-only OAuth. Without it, clicks and CTR are simulated from rank position.
+                Read-only OAuth. Unlocks real clicks and CTR, topic ideas from the searches the site already shows for, and a weekly check for published pages nobody sees.
               </p>
               {client.gsc_connected ? (
                 <Button size="sm" variant="danger" onClick={() => disconnectGsc.mutate()} loading={disconnectGsc.isPending}>
@@ -212,10 +308,83 @@ export default function ClientProfile() {
                 </Button>
               )}
             </div>
+
+            {Object.entries(INTEGRATIONS).map(([platform, meta]) => {
+              const row = intData?.integrations?.find((i) => i.platform === platform);
+              return (
+                <div key={platform} className="rounded-lg border border-border p-4">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-sm font-medium">{meta.name}</span>
+                    <Badge tone={row ? 'success' : 'neutral'}>{row ? `Connected · ${row.username}` : 'Not connected'}</Badge>
+                  </div>
+                  <p className="text-xs text-muted mb-3">{meta.what}</p>
+                  {row?.meta?.collection_name && (
+                    <p className="text-xs text-muted-strong -mt-2 mb-3">Collection “{row.meta.collection_name}” on {row.meta.domain}</p>
+                  )}
+                  {row?.meta?.blog_title && <p className="text-xs text-muted-strong -mt-2 mb-3">Blog “{row.meta.blog_title}” on {row.meta.domain}</p>}
+                  {row?.meta?.url && !row?.meta?.blog_title && <p className="text-xs text-muted-strong -mt-2 mb-3">{row.meta.url}</p>}
+                  {row ? (
+                    <Button size="sm" variant="danger" onClick={() => disconnectIntegration.mutate(platform)} loading={disconnectIntegration.isPending}>
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button size="sm" icon={KeyRound} onClick={() => { setIntForm({}); setIntModal(platform); }}>
+                      Connect
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Card>
 
-        <Card>
+        {campaign && (
+          <Card data-tour="profile-competitors">
+            <CardHeader
+              title="Competitors"
+              subtitle="Tracked on every keyword next to the client. Four or five direct competitors beat ten loose ones."
+              icon={Users}
+              action={
+                <Button size="sm" icon={Sparkles} onClick={() => setPickerOpen(true)} disabled={competitors.length >= 10}>
+                  Find competitors
+                </Button>
+              }
+            />
+            {competitors.length === 0 ? (
+              <div className="px-6 py-6 text-sm text-muted">None chosen yet. Press Find competitors to search, open each site and pick the real ones.</div>
+            ) : (
+              <div className="divide-y divide-border">
+                {competitors.map((c) => (
+                  <div key={c.domain} className="flex items-center justify-between gap-3 px-6 py-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {c.name && c.name !== c.domain && <span className="text-sm text-ink font-medium">{c.name}</span>}
+                        <span className={`${c.name && c.name !== c.domain ? 'text-xs text-muted font-mono' : 'text-sm text-ink'}`}>{c.domain}</span>
+                        {c.relationship && RELATIONSHIP_TONE[c.relationship] && <Badge tone={RELATIONSHIP_TONE[c.relationship]}>{c.relationship.replace('_', ' ')}</Badge>}
+                        {c.similarity != null && <span className="text-[11px] text-muted tabular-nums">{c.similarity}/100</span>}
+                      </div>
+                      {c.reason && <p className="text-xs text-muted truncate">{c.reason}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <a href={`https://${c.domain}`} target="_blank" rel="noreferrer">
+                        <Button size="sm" variant="ghost" icon={ExternalLink} />
+                      </a>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        icon={Trash2}
+                        onClick={() => saveCompetitors.mutate(competitors.filter((x) => x.domain !== c.domain))}
+                        loading={saveCompetitors.isPending}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        )}
+
+        <Card data-tour="profile-details">
           <CardHeader title="Business details" subtitle="Feeds every Claude prompt for this campaign" />
           <div className="card-pad grid gap-4 sm:grid-cols-2">
             <Field label="Business name">
@@ -306,6 +475,56 @@ export default function ClientProfile() {
           </Field>
         </div>
       </Modal>
+
+      <Modal
+        open={Boolean(intModal)}
+        onClose={() => setIntModal(null)}
+        title={`Connect ${INTEGRATIONS[intModal]?.name ?? ''}`}
+        subtitle={INTEGRATIONS[intModal]?.how}
+        footer={
+          <>
+            <Button onClick={() => setIntModal(null)}>Cancel</Button>
+            <Button variant="primary" onClick={() => connectIntegration.mutate()} loading={connectIntegration.isPending}>
+              Verify and save
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="flex gap-2.5 rounded-lg border border-border bg-surface-2 p-3">
+            <ShieldCheck className="w-4 h-4 text-success shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-strong">
+              Credentials are checked against the platform before they are stored, encrypted at rest, and never shown again. Revoke them on the platform at any time.
+            </p>
+          </div>
+          {(INTEGRATIONS[intModal]?.fields ?? []).map(([key, label, type]) => (
+            <Field key={key} label={label}>
+              {type === 'password' ? (
+                <PasswordInput value={intForm[key] ?? ''} onChange={(e) => setIntForm((f) => ({ ...f, [key]: e.target.value }))} />
+              ) : (
+                <Input value={intForm[key] ?? ''} onChange={(e) => setIntForm((f) => ({ ...f, [key]: e.target.value }))} />
+              )}
+            </Field>
+          ))}
+        </div>
+      </Modal>
+
+      {campaign && (
+        <CompetitorPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          seed={{
+            domain: client.domain,
+            business_name: client.business_name,
+            niche: form.niche || client.niche,
+            city: splitList(form.target_cities)[0] || client.target_cities?.[0],
+            country: (client.geo_target || '').split(',').pop()?.trim() || 'India',
+          }}
+          existing={competitors.map((c) => c.domain)}
+          max={10}
+          onAdd={(chosen) => saveCompetitors.mutate([...competitors, ...chosen].slice(0, 10))}
+        />
+      )}
     </div>
   );
 }
