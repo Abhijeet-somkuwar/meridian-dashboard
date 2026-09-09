@@ -9,6 +9,14 @@
       "destination": "https://meridian-api-pg71.onrender.com/api/:path*"
     },
     {
+      "source": "/privacy.html",
+      "destination": "/privacy.html"
+    },
+    {
+      "source": "/terms.html",
+      "destination": "/terms.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
